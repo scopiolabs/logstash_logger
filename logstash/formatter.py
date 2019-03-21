@@ -3,6 +3,8 @@ import logging
 import socket
 import sys
 from datetime import datetime
+import six
+from decimal import Decimal
 try:
     import json
 except ImportError:
@@ -10,6 +12,13 @@ except ImportError:
 
 
 class LogstashFormatterBase(logging.Formatter):
+    skip_list = (
+        'args', 'asctime', 'created', 'exc_info', 'exc_text', 'filename',
+        'funcName', 'id', 'levelname', 'levelno', 'lineno', 'module',
+        'msecs', 'msecs', 'message', 'msg', 'name', 'pathname', 'process',
+        'processName', 'relativeCreated', 'thread', 'threadName', 'extra',
+        'auth_token', 'password'
+    )
 
     def __init__(self, message_type='Logstash', tags=None, fqdn=False):
         self.message_type = message_type
@@ -20,32 +29,40 @@ class LogstashFormatterBase(logging.Formatter):
         else:
             self.host = socket.gethostname()
 
-    def get_extra_fields(self, record):
-        # The list contains all the attributes listed in
-        # http://docs.python.org/library/logging.html#logrecord-attributes
-        skip_list = (
-            'args', 'asctime', 'created', 'exc_info', 'exc_text', 'filename',
-            'funcName', 'id', 'levelname', 'levelno', 'lineno', 'module',
-            'msecs', 'msecs', 'message', 'msg', 'name', 'pathname', 'process',
-            'processName', 'relativeCreated', 'thread', 'threadName', 'extra',
-            'auth_token', 'password')
+    def _serialize_value(self, value):
+        # Recursively serializes value
 
-        if sys.version_info < (3, 0):
-            easy_types = (basestring, bool, dict, float, int, long, list, type(None))
+        if isinstance(value, dict):
+            return {
+                key: self._serialize_value(item)
+                for key, item in six.iteritems(value)
+            }
+        elif isinstance(value, (set, tuple, list, frozenset)):
+            return [
+                self._serialize_value(item)
+                for item in value
+            ]
         else:
-            easy_types = (str, bool, dict, float, int, list, type(None))
+            if sys.version_info < (3, 0):
+                easy_types = (basestring, bool, dict, float, int, long, list, type(None))
+            else:
+                easy_types = (str, bool, dict, float, int, list, type(None))
 
+            if isinstance(value, easy_types):
+                return value
+            elif isinstance(value, Decimal):
+                return float(value)
+            else:
+                return repr(value)
+
+    def get_extra_fields(self, record):
         fields = {}
         context_prefix = 'context.'
         for key, value in record.__dict__.items():
-            if key not in skip_list:
-
+            if key not in self.skip_list:
                 if key.startswith(context_prefix):
                     key = key.replace(context_prefix, '')
-                if isinstance(value, easy_types):
-                    fields[key] = value
-                else:
-                    fields[key] = repr(value)
+                fields[key] = self._serialize_value(value)
 
         return fields
 
