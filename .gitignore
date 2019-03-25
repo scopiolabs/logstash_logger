@@ -17,7 +17,6 @@ var
 sdist
 develop-eggs
 .installed.cfg
-lib
 lib64
 
 # Installer logs
@@ -35,3 +34,25 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+*.gem
+*.rbc
+.bundle
+.config
+.yardoc
+Gemfile.lock
+*.lock
+InstalledFiles
+_yardoc
+coverage
+doc/
+lib/bundler/man
+pkg
+rdoc
+spec/reports
+test/tmp
+test/version_tmp
+tmp
+.idea/
+log/
+.ruby-version

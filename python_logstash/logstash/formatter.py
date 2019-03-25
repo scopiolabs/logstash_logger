@@ -36,9 +36,12 @@ class LogstashFormatterBase(logging.Formatter):
             easy_types = (str, bool, dict, float, int, list, type(None))
 
         fields = {}
-
+        context_prefix = 'context.'
         for key, value in record.__dict__.items():
             if key not in skip_list:
+
+                if key.startswith(context_prefix):
+                    key = key.replace(context_prefix, '')
                 if isinstance(value, easy_types):
                     fields[key] = value
                 else:
