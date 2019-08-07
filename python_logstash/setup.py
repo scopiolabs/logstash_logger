@@ -9,6 +9,7 @@ setup(
     author='Volodymyr Klochan',
     author_email='vklochan@gmail.com',
     url='https://github.com/vklochan/python-logstash',
+    install_requires=['amqp==2.5.0', 'kombu==4.6.3'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
